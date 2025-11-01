@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+
+import { useState, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -10,14 +11,15 @@ import {
   MenuItem,
   TextField,
   Button,
-  Chip,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import { palette } from "@/src/styles/colors";
+import { palette } from "@/src/styles/colors"; // ← your palette, unchanged
 
 const selectSx = {
   "&.MuiFormControl-root": { minWidth: 150 },
+  "& .MuiInputBase-root": {
+    height: 40,
+  },
   "& .MuiOutlinedInput-root": {
     bgcolor: palette.paper,
     "& fieldset": { borderColor: palette.primary },
@@ -52,6 +54,9 @@ const menuProps = {
 
 const textFieldSx = {
   flexGrow: 1,
+  "& .MuiInputBase-root": {
+    height: 40,
+  },
   "& .MuiOutlinedInput-root": {
     bgcolor: palette.paper,
     "& fieldset": { borderColor: palette.primary },
@@ -63,68 +68,28 @@ const textFieldSx = {
   "& .MuiInputLabel-root.Mui-focused": { color: palette.primary },
 };
 
-const DIET_TYPES = ["Dash", "Keto", "Mediterranean", "Paleo", "Vegan"];
-const CUISINES = [
-  "American",
-  "Asian",
-  "British",
-  "Caribbean",
-  "Central Europe",
-  "Chinese",
-  "Eastern Europe",
-  "French",
-  "Indian",
-  "Italian",
-  "Japanese",
-  "Kosher",
-  "Mediterranean",
-  "Mexican",
-  "Middle Eastern",
-  "Nordic",
-  "South American",
-  "South East Asian",
-  "World",
-];
-
 /**
  * Props:
- * - onApply({ diet, cuisine, search })
- * - onRefresh?(): optional manual refresh
- * - loading?: boolean (disable controls when fetching)
- * - showRefresh?: boolean (default true)
- * - initialFilters?: { diet?:string, cuisine?:string, search?:string }
+ * - diets: string[]
+ * - initial: { diet?: string, search?: string }
+ * - onApply({ diet, search })
+ * - onRefresh()
+ * - disabled?: boolean
  */
-export default function FiltersBar({
+export default function Filter({
+  diets = [],
+  initial = { diet: "", search: "" },
   onApply,
-  onRefresh,
-  loading = false,
-  showRefresh = true,
-  initialFilters = {},
+  disabled = false,
 }) {
-  const [diet, setDiet] = useState(initialFilters.diet ?? "");
-  const [cuisine, setCuisine] = useState(initialFilters.cuisine ?? "");
-  const [search, setSearch] = useState(initialFilters.search ?? "");
+  const [diet, setDiet] = useState(initial.diet || "");
+  const [search, setSearch] = useState(initial.search || "");
 
-  // Debounced auto-apply whenever filters change
+  // Debounce apply
   useEffect(() => {
-    const t = setTimeout(() => {
-      onApply?.({ diet, cuisine, search });
-    }, 500);
+    const t = setTimeout(() => onApply?.({ diet, search }), 400);
     return () => clearTimeout(t);
-  }, [diet, cuisine, search, onApply]);
-
-  const hasActive = useMemo(
-    () => !!(diet || cuisine || search),
-    [diet, cuisine, search]
-  );
-
-  const clearAll = () => {
-    setDiet("");
-    setCuisine("");
-    setSearch("");
-    // fire immediately so UI reflects cleared results fast
-    onApply?.({ diet: "", cuisine: "", search: "" });
-  };
+  }, [diet, search, onApply]);
 
   return (
     <Box sx={{ bgcolor: palette.background, p: 3 }}>
@@ -137,19 +102,23 @@ export default function FiltersBar({
           spacing={2}
           alignItems="stretch"
         >
-          {/* Search */}
+          {/* Search (kept) */}
           <TextField
-            fullWidth
             size="small"
-            label="Search recipe, diet type, cuisine type"
+            label="Search diet type..."
+            placeholder="e.g., keto, vegan…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             sx={textFieldSx}
-            disabled={loading}
+            disabled={disabled}
           />
 
-          {/* Diet */}
-          <FormControl size="small" sx={selectSx} disabled={loading}>
+          {/* Diet Type (kept) */}
+          <FormControl
+            size="small"
+            sx={selectSx}
+            disabled={disabled || !diets.length}
+          >
             <InputLabel id="diet-type-label">Diet Type</InputLabel>
             <Select
               labelId="diet-type-label"
@@ -162,45 +131,26 @@ export default function FiltersBar({
               <MenuItem value="">
                 <em>All Diets</em>
               </MenuItem>
-              {DIET_TYPES.map((d) => (
-                <MenuItem key={d} value={d}>
+              {diets.map((d) => (
+                <MenuItem key={d} value={d.toLowerCase()}>
                   {d}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          {/* Cuisine */}
-          <FormControl size="small" sx={selectSx} disabled={loading}>
-            <InputLabel id="cuisine-type-label">Cuisine Type</InputLabel>
-            <Select
-              labelId="cuisine-type-label"
-              id="cuisine-type-select"
-              value={cuisine}
-              label="Cuisine Type"
-              onChange={(e) => setCuisine(e.target.value)}
-              MenuProps={menuProps}
-            >
-              <MenuItem value="">
-                <em>All Cuisines</em>
-              </MenuItem>
-              {CUISINES.map((c) => (
-                <MenuItem key={c} value={c}>
-                  {c}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Actions */}
-
+          {/* Refresh (kept) */}
           <Button
             variant="contained"
             color="primary"
             size="small"
             startIcon={<RefreshIcon />}
-            onClick={() => onRefresh?.()}
-            disabled={loading}
+            onClick={() => {
+              setDiet("");
+              setSearch("");
+              onApply?.({ diet: "", search: "" });
+            }}
+            disabled={disabled}
             sx={{
               textTransform: "none",
               borderColor: palette.primary,
@@ -214,36 +164,9 @@ export default function FiltersBar({
               minWidth: "100px",
             }}
           >
-            Refresh
+            Reset
           </Button>
         </Stack>
-
-        {/* Active filter chips (optional, nice UX) */}
-        {hasActive && (
-          <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
-            {diet && (
-              <Chip
-                label={`Diet: ${diet}`}
-                onDelete={() => setDiet("")}
-                sx={{ bgcolor: "#f1e6d6" }}
-              />
-            )}
-            {cuisine && (
-              <Chip
-                label={`Cuisine: ${cuisine}`}
-                onDelete={() => setCuisine("")}
-                sx={{ bgcolor: "#f1e6d6" }}
-              />
-            )}
-            {search && (
-              <Chip
-                label={`Search: ${search}`}
-                onDelete={() => setSearch("")}
-                sx={{ bgcolor: "#f1e6d6" }}
-              />
-            )}
-          </Stack>
-        )}
       </Paper>
     </Box>
   );

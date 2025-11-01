@@ -1,35 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  Box, Paper, Stack, Typography, IconButton, Divider,
+  Box,
+  Paper,
+  Stack,
+  Typography,
+  IconButton,
+  Divider,
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { PieChart } from "@mui/x-charts/PieChart";
-import { ScatterChart } from "@mui/x-charts/ScatterChart";
-import { palette } from "@/src/styles/colors";
 import HeatmapEcharts from "./Heatmap";
+import { palette } from "@/src/styles/colors";
 
-export default function Charts() {
+export default function Charts({ charts, selectedDiet }) {
   const [index, setIndex] = useState(0);
+  const diets = charts?.bar?.labels || [];
 
-  // ---- heatmap data (declare, don't assign to an undeclared var) ----
-  const heatmapConfig = {
-    xCats: ["Protein (g)", "Carbs (g)", "Fat (g)"],
-    yCats: ["Dash", "Keto", "Mediterranean", "Paleo", "Vegan"],
-    matrix: [
-      [22, 35, 12],
-      [28, 10, 45],
-      [20, 40, 18],
-      [26, 20, 22],
-      [18, 42, 15],
-    ],
-  };
+  const pieIndex = useMemo(() => {
+    const sel = (selectedDiet || "").toLowerCase();
+    const idx = diets.findIndex((d) => d.toLowerCase() === sel);
+    return idx >= 0 ? idx : 0;
+  }, [diets, selectedDiet]);
+  const titleDiet = useMemo(() => diets[pieIndex] || "", [diets, pieIndex]);
 
-  // sample data for other charts (consistent with heatmap)
-  const diets = heatmapConfig.yCats;
+  const pieData = charts?.pieForDiet?.(pieIndex) || [];
 
   const cards = [
     {
@@ -37,29 +35,24 @@ export default function Charts() {
       title: "Average Macros by Diet (Bar)",
       body: (
         <BarChart
-          xAxis={[{ data: diets, scaleType: "band" }]}
+          xAxis={[{ data: charts?.bar?.labels || [], scaleType: "band" }]}
           series={[
-            { label: "Protein", data: heatmapConfig.matrix.map(r => r[0]), color: palette.primary },
-            { label: "Carbs",   data: heatmapConfig.matrix.map(r => r[1]), color: "#8A9C25" },
-            { label: "Fat",     data: heatmapConfig.matrix.map(r => r[2]), color: "#C1E899" },
+            {
+              label: "Protein (g)",
+              data: charts?.bar?.series[0].data,
+              color: palette.primary,
+            },
+            {
+              label: "Carbs (g)",
+              data: charts?.bar?.series[1].data,
+              color: "#8A9C25",
+            },
+            {
+              label: "Fat (g)",
+              data: charts?.bar?.series[2].data,
+              color: "#C1E899",
+            },
           ]}
-          height={360}
-        />
-      ),
-    },
-    {
-      key: "scatter",
-      title: "Top Protein Recipes by Cuisine (Scatter)",
-      body: (
-        <ScatterChart
-          series={[
-            { label: "Keto",  data: [{ x: "Italian", y: 45 }, { x: "French", y: 38 }] },
-            { label: "Paleo", data: [{ x: "Asian", y: 34 }] },
-            { label: "Dash",  data: [{ x: "American", y: 28 }] },
-            { label: "Vegan", data: [{ x: "Indian", y: 24 }] },
-          ]}
-          xAxis={[{ scaleType: "band", data: ["Italian","French","Asian","American","Indian"] }]}
-          yAxis={[{ label: "Protein (g)" }]}
           height={360}
         />
       ),
@@ -69,46 +62,62 @@ export default function Charts() {
       title: "Average Macros Heatmap",
       body: (
         <HeatmapEcharts
-          xCats={heatmapConfig.xCats}
-          yCats={heatmapConfig.yCats}
-          matrix={heatmapConfig.matrix}
+          xCats={charts?.heatmap?.xCats || []}
+          yCats={charts?.heatmap?.yCats || []}
+          matrix={charts?.heatmap?.matrix || []}
         />
       ),
     },
     {
       key: "pie",
-      title: "Macronutrient Distribution (Pie)",
+      title: `Macronutrient Distribution — ${titleDiet}`,
       body: (
         <PieChart
-          series={[{
-            data: [
-              { id: 0, value: 23, label: "Protein" },
-              { id: 1, value: 36, label: "Carbs" },
-              { id: 2, value: 17, label: "Fat" },
-            ],
-          }]}
+          series={[
+            {
+              data: (pieData || []).map((d, i) => ({
+                ...d,
+                color: ["#3E721D", "#6DAE3E", "#A2D45E", "#C8E6A3", "#E8F5E9"][
+                  i % 5
+                ],
+              })),
+            },
+          ]}
           height={360}
         />
       ),
     },
   ];
 
-  const prev = () => setIndex(i => (i - 1 + cards.length) % cards.length);
-  const next = () => setIndex(i => (i + 1) % cards.length);
+  const prev = () => setIndex((i) => (i - 1 + cards.length) % cards.length);
+  const next = () => setIndex((i) => (i + 1) % cards.length);
 
   return (
     <Box sx={{ p: 3 }}>
-      <Paper elevation={2} sx={{ p: 3, bgcolor: palette.paper, borderRadius: 2 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: "bold", color: palette.primary }}>
+      <Paper
+        elevation={2}
+        sx={{
+          p: 3,
+          borderRadius: 2,
+          bgcolor: palette.paper,
+          color: palette.textSecondary,
+        }}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mb: 1 }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
             Data Visualizations — {cards[index].title}
           </Typography>
           <Stack direction="row" spacing={1}>
-            <IconButton onClick={prev} sx={{ color: palette.primary }}>
-              <ArrowBackIosNewIcon fontSize="small" />
+            <IconButton onClick={prev}>
+              <ArrowBackIosNewIcon fontSize="small" sx={{ color: "#E6F0DC" }} />
             </IconButton>
-            <IconButton onClick={next} sx={{ color: palette.primary }}>
-              <ArrowForwardIosIcon fontSize="small" />
+            <IconButton onClick={next}>
+              <ArrowForwardIosIcon fontSize="small" sx={{ color: "#E6F0DC" }} />
             </IconButton>
           </Stack>
         </Stack>

@@ -31,13 +31,13 @@ export default function HeatmapEcharts({ xCats, yCats, matrix }) {
       type: "category",
       data: xCats, // ["Protein (g)","Carbs (g)","Fat (g)"]
       splitArea: { show: true },
-      axisLabel: { color: "#fff", fontSize: 12 },
+      axisLabel: { color: "#000", fontSize: 12 },
     },
     yAxis: {
       type: "category",
       data: yCats, // ["Dash","Keto",...]
       splitArea: { show: true },
-      axisLabel: { color: "#fff", fontSize: 12 },
+      axisLabel: { color: "#000", fontSize: 12 },
     },
     visualMap: {
       min: 0,
@@ -46,7 +46,7 @@ export default function HeatmapEcharts({ xCats, yCats, matrix }) {
       orient: "vertical",
       right: 0,
       top: "middle",
-      inRange: { color: ["#FFFFFF", "#8A9C25"] },
+       inRange: { color: ["#e6f4d7", "#9bc53d", "#4a772f"] },
     },
     series: [
       {
