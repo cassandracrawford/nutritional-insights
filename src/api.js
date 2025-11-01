@@ -1,4 +1,3 @@
-// src/api/index.js
 export async function fetchDietData() {
   const url = process.env.NEXT_PUBLIC_API_URL;
   if (!url) throw new Error("NEXT_PUBLIC_API_URL is not set");
@@ -7,10 +6,9 @@ export async function fetchDietData() {
     const txt = await res.text().catch(() => "");
     throw new Error(`HTTP ${res.status} ${res.statusText} ${txt}`);
   }
-  return res.json(); // { metadata, data }
+  return res.json(); 
 }
 
-// Keep your existing mapping logic but make it reusable client-side:
 export function buildCharts(raw, { diet = "", search = "" } = {}) {
   const rows = Array.isArray(raw?.data) ? raw.data : [];
 

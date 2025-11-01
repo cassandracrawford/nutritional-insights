@@ -46,9 +46,9 @@ export default function Home() {
   const handleApply = (next) => setFilters(next);
 
   return (
-    <main className="min-h-screen grid grid-rows-[auto,1fr,auto]">
+    <main className="min-h-screen flex flex-col">
       <Header />
-      <section className="overflow-y-auto">
+      <section className="flex-1 overflow-y-auto">
         <Dashboard
           charts={charts}
           meta={meta}

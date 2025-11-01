@@ -1,4 +1,3 @@
-// components/HeatmapEcharts.jsx
 "use client";
 
 import dynamic from "next/dynamic";
@@ -7,7 +6,6 @@ import { useMemo } from "react";
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
 export default function HeatmapEcharts({ xCats, yCats, matrix }) {
-  // convert matrix (rows=yCats, cols=xCats) into ECharts [xIndex, yIndex, value]
   const seriesData = useMemo(() => {
     const out = [];
     for (let y = 0; y < yCats.length; y++) {
