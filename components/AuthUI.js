@@ -10,6 +10,7 @@ export default function AuthUI({
   onLogin,
   onRegister,
   onOAuth,
+  onError,
 }) {
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -52,7 +53,7 @@ export default function AuthUI({
       {isLogin ? (
         <LoginForm onSubmit={onLogin} />
       ) : (
-        <RegisterForm onSubmit={onRegister} />
+        <RegisterForm onSubmit={onRegister} onError={onError} />
       )}
 
       {/* Divider */}

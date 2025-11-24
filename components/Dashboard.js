@@ -16,8 +16,9 @@ export default function Dashboard({
   filters,
 }) {
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col py-4">
-      <h1 className="px-6 font-bold text-xl">Explore Nutritional Insights</h1>
+    <div className="w-full max-w-7xl mx-auto flex flex-col">
+      {/* <h1 className="px-6 font-bold text-xl">Explore Nutritional Insights</h1> */}
+      {meta && <Metadata metadata={meta} />}
 
       <Filter
         diets={charts?.diets || []}
@@ -39,8 +40,6 @@ export default function Dashboard({
       ) : charts ? (
         <Charts charts={charts} selectedDiet={selectedDiet} />
       ) : null}
-
-      {meta && <Metadata metadata={meta} />}
     </div>
   );
 }

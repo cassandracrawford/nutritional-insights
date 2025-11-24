@@ -2,17 +2,49 @@
 
 import { useState } from "react";
 
-export default function RegisterForm({ onSubmit }) {
+export default function RegisterForm({ onSubmit, onError }) {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (onSubmit) onSubmit({ email, password });
+    if (password !== confirmPassword) {
+      onError?.("Passwords do not match.");
+      return;
+    }
+
+    onSubmit?.({ name, email, password });
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+      <div className="space-y-1.5 sm:space-y-2">
+        <label
+          htmlFor="name"
+          className="block text-xs sm:text-sm font-normal text-slate-100"
+        >
+          Name
+        </label>
+        <input
+          id="name"
+          type="text"
+          autoComplete="name"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="
+              w-full rounded-2xl border border-white/30 bg-white/15
+              px-3 py-2 sm:px-4 sm:py-2.5
+              text-xs sm:text-sm text-slate-900
+              placeholder:text-slate-500 font-light
+              focus:outline-none focus:ring-2 focus:ring-white/70
+              focus:border-transparent
+            "
+          placeholder="Jane Doe"
+        />
+      </div>
       <div className="space-y-1.5 sm:space-y-2">
         <label
           htmlFor="email"
@@ -64,7 +96,31 @@ export default function RegisterForm({ onSubmit }) {
           placeholder="•••••••••••••"
         />
       </div>
-
+      <div className="space-y-1.5 sm:space-y-2">
+        <label
+          htmlFor="confirmPassword"
+          className="block text-xs sm:text-sm font-normal text-slate-100"
+        >
+          Confirm Password
+        </label>
+        <input
+          id="confirmPassword"
+          type="password"
+          required
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="
+              w-full rounded-2xl border border-white/30 bg-white/15
+              px-3 py-2 sm:px-4 sm:py-2.5
+              text-xs sm:text-sm text-slate-900
+              placeholder:text-slate-500 font-light
+              focus:outline-none focus:ring-2 focus:ring-white/70
+              focus:border-transparent
+            "
+          placeholder="•••••••••••••"
+        />
+      </div>
       <button
         type="submit"
         className="

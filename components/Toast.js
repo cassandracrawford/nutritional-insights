@@ -15,11 +15,11 @@ export default function ToastMessage({ message, duration = 3000 }) {
   return (
     <div
       className={`
-        fixed bottom-14 left-1/2 -translate-x-1/2
-        px-5 py-3 rounded-2xl
-        backdrop-blur-xl bg-white/15 border
+        fixed top-10 left-1/2 -translate-x-1/2
+        px-5 py-3 rounded-2xl z-50
+        backdrop-blur-lg bg-white/15 border
         shadow-lg shadow-black/30 text-white
-        animate-fadeIn text-sm font-light
+        animate-fadeIn text-xs sm:text-sm font-light
       `}
     >
       {message}

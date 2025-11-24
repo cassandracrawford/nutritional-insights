@@ -12,31 +12,44 @@ export default function LoginPage() {
   const [toast, setToast] = useState(null);
   const router = useRouter();
 
+  function showToast(message) {
+    setToast({
+      id: Date.now(),
+      message,
+    });
+  }
+
   async function handleLogin({ email, password }) {
     const { error } = await loginWithEmailPassword(email, password);
 
     if (error) {
       console.log(error);
-      setToast({
-        id: Date.now(),
-        message: "Login failed. Please check your credentials.",
-      });
+      showToast("Login failed. Please check your credentials.");
       return;
     }
 
     router.replace("/dashboard");
   }
 
-  async function handleRegister({ email, password }) {
-    const { error } = await registerWithEmailPassword(email, password);
-
-    if (error) {
-      console.log(error);
-      setToast({ message: "Registration failed. Please try again." });
+  async function handleRegister({ name, email, password }) {
+    if (!name.trim() || name.trim().length < 2) {
+      showToast("Please enter a valid name.");
       return;
     }
 
-    setToast({ message: "Account created! Please sign in." });
+    if (password.length < 6) {
+      showToast("Password must be at least 6 characters long.");
+      return;
+    }
+    const { error } = await registerWithEmailPassword(name, email, password);
+
+    if (error) {
+      console.log(error);
+      showToast("Registration failed. Please try again.");
+      return;
+    }
+
+    showToast("Account created! Please sign in.");
     setMode("login");
   }
 
@@ -45,9 +58,7 @@ export default function LoginPage() {
 
     if (error) {
       console.log(error);
-      setToast({
-        message: "Google sign-in failed. Please try again.",
-      });
+      showToast("Google sign-in failed. Please try again.");
     }
   }
 
@@ -60,8 +71,11 @@ export default function LoginPage() {
         onLogin={handleLogin}
         onRegister={handleRegister}
         onOAuth={handleOAuth}
+        onError={(msg) => showToast(msg)}
       />
-      {toast && <ToastMessage key={toast.id} message={toast.message} duration={3000} />}
+      {toast && (
+        <ToastMessage key={toast.id} message={toast.message} duration={3000} />
+      )}
     </main>
   );
 }

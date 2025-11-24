@@ -1,23 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  Box,
-  Paper,
-  Stack,
-  Typography,
-  IconButton,
-  Divider,
-} from "@mui/material";
-import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import dynamic from "next/dynamic";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { PieChart } from "@mui/x-charts/PieChart";
-import HeatmapEcharts from "./Heatmap";
-import { palette } from "@/src/styles/colors";
+import { useMemo } from "react";
+
+const ReactECharts = dynamic(() => import("echarts-for-react"), {
+  ssr: false,
+});
 
 export default function Charts({ charts, selectedDiet }) {
-  const [index, setIndex] = useState(0);
+  // ------------------------
+  // PIE CHART – selected diet
+  // ------------------------
   const diets = charts?.bar?.labels || [];
 
   const pieIndex = useMemo(() => {
@@ -25,105 +20,175 @@ export default function Charts({ charts, selectedDiet }) {
     const idx = diets.findIndex((d) => d.toLowerCase() === sel);
     return idx >= 0 ? idx : 0;
   }, [diets, selectedDiet]);
-  const titleDiet = useMemo(() => diets[pieIndex] || "", [diets, pieIndex]);
 
   const pieData = charts?.pieForDiet?.(pieIndex) || [];
 
-  const cards = [
-    {
-      key: "bar",
-      title: "Average Macros by Diet (Bar)",
-      body: (
-        <BarChart
-          xAxis={[{ data: charts?.bar?.labels || [], scaleType: "band" }]}
-          series={[
-            {
-              label: "Protein (g)",
-              data: charts?.bar?.series[0].data,
-              color: palette.primary,
-            },
-            {
-              label: "Carbs (g)",
-              data: charts?.bar?.series[1].data,
-              color: "#8A9C25",
-            },
-            {
-              label: "Fat (g)",
-              data: charts?.bar?.series[2].data,
-              color: "#C1E899",
-            },
-          ]}
-          height={360}
-        />
-      ),
-    },
-    {
-      key: "heatmap",
-      title: "Average Macros Heatmap",
-      body: (
-        <HeatmapEcharts
-          xCats={charts?.heatmap?.xCats || []}
-          yCats={charts?.heatmap?.yCats || []}
-          matrix={charts?.heatmap?.matrix || []}
-        />
-      ),
-    },
-    {
-      key: "pie",
-      title: `Macronutrient Distribution — ${titleDiet}`,
-      body: (
-        <PieChart
-          series={[
-            {
-              data: (pieData || []).map((d, i) => ({
-                ...d,
-                color: ["#3E721D", "#6DAE3E", "#A2D45E", "#C8E6A3", "#E8F5E9"][
-                  i % 5
-                ],
-              })),
-            },
-          ]}
-          height={360}
-        />
-      ),
-    },
-  ];
+  // ------------------------
+  // HEATMAP – safe guard so option is never undefined
+  // ------------------------
+  const heatmapOption = charts?.heatmapOption || null;
 
-  const prev = () => setIndex((i) => (i - 1 + cards.length) % cards.length);
-  const next = () => setIndex((i) => (i + 1) % cards.length);
+  // ------------------------
+  // SCATTERMAP MOCK DATA
+  // ------------------------
+  const scatterMock = {
+    x: ["Protein", "Carbs", "Fat", "Fiber"],
+    y: ["Keto", "Dash", "Vegan", "Paleo"],
+    values: [
+      [40, 50, 30, 20],
+      [60, 80, 20, 35],
+      [30, 90, 25, 40],
+      [70, 40, 15, 10],
+    ],
+  };
+
+  const scatterPoints = [];
+  for (let yi = 0; yi < scatterMock.y.length; yi++) {
+    for (let xi = 0; xi < scatterMock.x.length; xi++) {
+      scatterPoints.push([xi, yi, scatterMock.values[yi][xi]]);
+    }
+  }
+
+  const maxScatter = scatterPoints.length
+    ? Math.max.apply(
+        null,
+        scatterPoints.map((p) => p[2])
+      )
+    : 1;
+
+  const scatterOption = {
+    tooltip: {
+      formatter: function (params) {
+        const value = params.value || [];
+        const xIndex = value[0];
+        const yIndex = value[1];
+        const val = value[2];
+        return (
+          "<strong>" +
+          scatterMock.y[yIndex] +
+          "</strong><br/>" +
+          scatterMock.x[xIndex] +
+          ": " +
+          val
+        );
+      },
+    },
+    grid: { left: 40, right: 20, top: 30, bottom: 40, containLabel: true },
+    xAxis: {
+      type: "category",
+      data: scatterMock.x,
+      axisLine: { lineStyle: { color: "rgba(15,23,42,0.2)" } },
+      axisLabel: { color: "rgba(15,23,42,0.8)", fontSize: 12 },
+    },
+    yAxis: {
+      type: "category",
+      data: scatterMock.y,
+      axisLine: { lineStyle: { color: "rgba(15,23,42,0.2)" } },
+      axisLabel: { color: "rgba(15,23,42,0.8)", fontSize: 12 },
+    },
+    series: [
+      {
+        type: "scatter",
+        data: scatterPoints,
+        symbolSize: function (val) {
+          return 10 + (val[2] / maxScatter) * 25;
+        },
+        itemStyle: {
+          color: "#fb7185", // rose, no green
+        },
+      },
+    ],
+  };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Paper
-        elevation={2}
-        sx={{
-          p: 3,
-          borderRadius: 2,
-          bgcolor: palette.paper,
-          color: palette.textSecondary,
-        }}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ mb: 1 }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-            Data Visualizations — {cards[index].title}
-          </Typography>
-          <Stack direction="row" spacing={1}>
-            <IconButton onClick={prev}>
-              <ArrowBackIosNewIcon fontSize="small" sx={{ color: "#E6F0DC" }} />
-            </IconButton>
-            <IconButton onClick={next}>
-              <ArrowForwardIosIcon fontSize="small" sx={{ color: "#E6F0DC" }} />
-            </IconButton>
-          </Stack>
-        </Stack>
-        <Divider sx={{ mb: 2, borderColor: palette.primary, opacity: 0.3 }} />
-        <Box sx={{ width: "100%" }}>{cards[index].body}</Box>
-      </Paper>
-    </Box>
+    <div className="px-4 py-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* -------- BAR CHART -------- */}
+        <div className="glass-card p-6 rounded-3xl backdrop-blur-xl border border-white/20">
+          <h2 className="text-lg font-semibold text-white mb-4 drop-shadow">
+            Average Macros by Diet (Bar)
+          </h2>
+          <BarChart
+            height={350}
+            xAxis={[
+              {
+                data: charts?.bar?.labels || [],
+                scaleType: "band",
+              },
+            ]}
+            series={[
+              {
+                label: "Protein",
+                data: charts?.bar?.series?.[0]?.data || [],
+                color: "#fb7185", // rose
+              },
+              {
+                label: "Carbs",
+                data: charts?.bar?.series?.[1]?.data || [],
+                color: "#f97316", // orange
+              },
+              {
+                label: "Fat",
+                data: charts?.bar?.series?.[2]?.data || [],
+                color: "#c4b5fd", // violet
+              },
+            ]}
+          />
+        </div>
+
+        {/* -------- HEATMAP -------- */}
+        <div className="glass-card p-6 rounded-3xl backdrop-blur-xl border border-white/20">
+          <h2 className="text-lg font-semibold text-white mb-4 drop-shadow">
+            Average Macros Heatmap
+          </h2>
+          {heatmapOption ? (
+            <ReactECharts option={heatmapOption} style={{ height: 350 }} />
+          ) : (
+            <div className="flex h-[350px] items-center justify-center text-sm text-white/70">
+              No heatmap data available.
+            </div>
+          )}
+        </div>
+
+        {/* -------- PIE CHART -------- */}
+        <div className="glass-card p-6 rounded-3xl backdrop-blur-xl border border-white/20">
+          <h2 className="text-lg font-semibold text-white mb-4 drop-shadow">
+            Macronutrient Distribution — {diets[pieIndex] || "Diet"}
+          </h2>
+
+          <PieChart
+            height={350}
+            series={[
+              {
+                data: pieData.map((d, i) => ({
+                  ...d,
+                  color: [
+                    "#fb7185", // rose
+                    "#f97316", // orange
+                    "#fbbf24", // amber
+                    "#c4b5fd", // violet
+                  ][i % 4],
+                })),
+              },
+            ]}
+          />
+        </div>
+
+        {/* -------- SCATTERMAP (MOCK) -------- */}
+        <div className="glass-card p-6 rounded-3xl backdrop-blur-xl border border-white/20">
+          <h2 className="text-lg font-semibold text-white mb-4 drop-shadow">
+            Scattermap (Mock Data)
+          </h2>
+          <ReactECharts option={scatterOption} style={{ height: 350 }} />
+        </div>
+      </div>
+
+      <style jsx>{`
+        .glass-card {
+          background: rgba(255, 255, 255, 0.12);
+          box-shadow: 0 10px 32px rgba(15, 23, 42, 0.25);
+        }
+      `}</style>
+    </div>
   );
 }

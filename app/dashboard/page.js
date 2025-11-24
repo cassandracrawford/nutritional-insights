@@ -47,7 +47,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col">
-      <Header />
+      {/* <Header /> */}
       <section className="flex-1 overflow-y-auto">
         <Dashboard
           charts={charts}
@@ -60,7 +60,7 @@ export default function Home() {
           filters={filters}
         />
       </section>
-      <Footer />
+      {/* <Footer /> */}
     </main>
   );
 }
