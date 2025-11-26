@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Box, Alert, CircularProgress } from "@mui/material";
 import Filter from "./Filter";
 import Charts from "./Charts";
 import Metadata from "./Metadata";
+import RecipeBrowser from "./RecipeBrowser";
 
 export default function Dashboard({
   charts,
@@ -14,16 +16,27 @@ export default function Dashboard({
   onDietChange,
   onApply,
   filters,
+  recipes = [],
 }) {
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
+  // Optional: whenever filters change from parent, reset to page 1.
+  // You can also do this at the place where you call <Dashboard />.
+
+  const totalRecipes = recipes.length; // later you can use meta.total if backend sends it
+
   return (
     <div className="w-full max-w-7xl mx-auto flex flex-col">
-      {/* <h1 className="px-6 font-bold text-xl">Explore Nutritional Insights</h1> */}
       {meta && <Metadata metadata={meta} />}
 
       <Filter
         diets={charts?.diets || []}
         initial={filters}
-        onApply={onApply}
+        onApply={(f) => {
+          setPage(1);      // reset pagination on new search/filter
+          onApply?.(f);
+        }}
         disabled={loading}
       />
 
@@ -40,6 +53,15 @@ export default function Dashboard({
       ) : charts ? (
         <Charts charts={charts} selectedDiet={selectedDiet} />
       ) : null}
+
+      {/* NEW: Recipe browser with pagination */}
+      <RecipeBrowser
+        recipes={recipes}
+        page={page}
+        pageSize={pageSize}
+        total={totalRecipes}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

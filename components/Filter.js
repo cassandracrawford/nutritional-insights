@@ -1,3 +1,4 @@
+// components/Filter.jsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -39,10 +40,25 @@ const selectSx = {
   },
   "& .MuiInputLabel-root": {
     color: labelColor,
-    fontSize: "0.85rem",
+    fontSize: "0.9rem",
   },
   "& .MuiInputLabel-root.Mui-focused": { color: labelColor },
   "& .MuiSelect-icon": { color: labelColor },
+
+  // 🔥 Disabled styling here
+  "& .Mui-disabled": {
+    color: "rgba(255,255,255,0.45) !important",
+    WebkitTextFillColor: "rgba(255,255,255,0.45) !important",
+  },
+  "& .MuiInputLabel-root.Mui-disabled": {
+    color: "rgba(255,255,255,0.45) !important",
+  },
+  "& .MuiOutlinedInput-root.Mui-disabled fieldset": {
+    borderColor: "rgba(255,255,255,0.35) !important",
+  },
+  "& .MuiSelect-icon": {
+    color: "rgba(255,255,255,0.45) !important",
+  },
 };
 
 const menuProps = {
@@ -59,7 +75,7 @@ const menuProps = {
       "& .MuiMenuItem-root": {
         fontSize: "0.9rem",
         paddingY: 1,
-        color: "#FFFFFF", // dark text for contrast
+        color: "#FFFFFF",
         "&.Mui-selected": {
           backgroundColor: "rgba(255, 255, 255, 0.32)",
           color: "#111827",
@@ -97,57 +113,96 @@ const textFieldSx = {
       },
     },
   },
-  "& .MuiInputLabel-root": { color: labelColor, fontSize: "0.85rem" },
+  "& .MuiInputLabel-root": { color: labelColor, fontSize: "0.9rem" },
   "& .MuiInputLabel-root.Mui-focused": { color: labelColor },
+  "& .Mui-disabled": {
+    color: "rgba(255,255,255,0.45) !important",
+    WebkitTextFillColor: "rgba(255,255,255,0.45) !important",
+  },
+  "& .MuiInputLabel-root.Mui-disabled": {
+    color: "rgba(255,255,255,0.45) !important",
+  },
+  "& .MuiOutlinedInput-root.Mui-disabled fieldset": {
+    borderColor: "rgba(255,255,255,0.35) !important",
+  },
 };
 
 /**
  * Props:
  * - diets: string[]
- * - initial: { diet?: string, search?: string }
- * - onApply({ diet, search })
+ * - cuisines: string[]
+ * - macroOptions: string[]   // e.g. ["High Protein", "Low Carb", ...]
+ * - initial: {
+ *     search?: string,
+ *     diet?: string,
+ *     cuisine?: string,
+ *     macro?: string,
+ *     pageSize?: number
+ *   }
+ * - onApply({ search, diet, cuisine, macro, pageSize })
  * - disabled?: boolean
  */
 export default function Filter({
   diets = [],
-  initial = { diet: "", search: "" },
+  cuisines = [],
+  macroOptions = [],
+  initial = {},
   onApply,
   disabled = false,
 }) {
-  const [diet, setDiet] = useState(initial.diet || "");
   const [search, setSearch] = useState(initial.search || "");
+  const [diet, setDiet] = useState(initial.diet || "");
+  const [cuisine, setCuisine] = useState(initial.cuisine || "");
+  const [macro, setMacro] = useState(initial.macro || "");
+  const [pageSize, setPageSize] = useState(initial.pageSize || 10);
 
-  // Debounce filter changes
+  // Debounced apply whenever any filter changes
   useEffect(() => {
     const t = setTimeout(() => {
-      onApply?.({ diet, search });
+      onApply?.({ search, diet, cuisine, macro, pageSize });
     }, 400);
 
     return () => clearTimeout(t);
-  }, [diet, search, onApply]);
+  }, [search, diet, cuisine, macro, pageSize, onApply]);
+
+  const handleReset = () => {
+    setSearch("");
+    setDiet("");
+    setCuisine("");
+    setMacro("");
+    setPageSize(10);
+
+    // Call immediately so list snaps back to default
+    onApply?.({
+      search: "",
+      diet: "",
+      cuisine: "",
+      macro: "",
+      pageSize: 10,
+    });
+  };
 
   return (
     <section className="w-full flex justify-center px-4 pt-4">
-      {/* Glass container to match login/dashboard cards */}
       <div
         className="
           w-full max-w-7xl
           rounded-3xl border border-white/25 bg-white/10
-          backdrop-blur-2xl
+          backdrop-blur-3xl
           shadow-xl shadow-slate-900/40
           px-4 py-4 sm:px-6 sm:py-5
         "
       >
         <Stack
-          direction={{ xs: "column", sm: "row" }}
+          direction={{ xs: "column", md: "row" }}
           spacing={2}
           alignItems="stretch"
         >
           {/* Search field */}
           <TextField
             size="small"
-            label="Search diet type..."
-            placeholder="e.g., keto, vegan…"
+            label="Keyword Search"
+            placeholder="Search recipes, ingredients, keywords…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             sx={textFieldSx}
@@ -170,11 +225,89 @@ export default function Filter({
               MenuProps={menuProps}
             >
               <MenuItem value="">
-                <em>All Diets</em>
+                <em>All diets</em>
               </MenuItem>
               {diets.map((d) => (
-                <MenuItem key={d} value={d.toLowerCase()}>
+                <MenuItem key={d} value={d}>
                   {d}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Cuisine select */}
+          <FormControl
+            size="small"
+            sx={selectSx}
+            disabled={disabled || !cuisines.length}
+          >
+            <InputLabel id="cuisine-label">Cuisine</InputLabel>
+            <Select
+              labelId="cuisine-label"
+              id="cuisine-select"
+              value={cuisine}
+              label="Cuisine"
+              onChange={(e) => setCuisine(e.target.value)}
+              MenuProps={menuProps}
+            >
+              <MenuItem value="">
+                <em>All cuisines</em>
+              </MenuItem>
+              {cuisines.map((c) => (
+                <MenuItem key={c} value={c}>
+                  {c}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Macro focus select */}
+          <FormControl
+            size="small"
+            sx={selectSx}
+            disabled={disabled || !macroOptions.length}
+          >
+            <InputLabel id="macro-label">Macronutrient</InputLabel>
+            <Select
+              labelId="macro-label"
+              id="macro-select"
+              value={macro}
+              label="Macro Focus"
+              onChange={(e) => setMacro(e.target.value)}
+              MenuProps={menuProps}
+            >
+              <MenuItem value="">
+                <em>Any macro</em>
+              </MenuItem>
+              {macroOptions.map((m) => (
+                <MenuItem key={m} value={m}>
+                  {m}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Per-page selector (for pagination) */}
+          <FormControl
+            size="small"
+            sx={{
+              ...selectSx,
+              minWidth: 110,
+            }}
+            disabled={disabled}
+          >
+            <InputLabel id="per-page-label">Per page</InputLabel>
+            <Select
+              labelId="per-page-label"
+              id="per-page-select"
+              value={pageSize}
+              label="Per page"
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              MenuProps={menuProps}
+            >
+              {[5, 10, 20, 50].map((n) => (
+                <MenuItem key={n} value={n}>
+                  {n}
                 </MenuItem>
               ))}
             </Select>
@@ -185,11 +318,7 @@ export default function Filter({
             variant="contained"
             size="small"
             startIcon={<RefreshIcon />}
-            onClick={() => {
-              setDiet("");
-              setSearch("");
-              onApply?.({ diet: "", search: "" });
-            }}
+            onClick={handleReset}
             disabled={disabled}
             sx={{
               textTransform: "none",
@@ -197,14 +326,11 @@ export default function Filter({
               borderRadius: "999px",
               px: 3,
               minWidth: "120px",
-
-              // Logout-style look: light pill, dark text, subtle border
               fontWeight: 500,
               color: "#111827",
               backgroundColor: "rgba(255, 255, 255, 0.96)",
               border: "1px solid rgba(255, 255, 255, 0.8)",
               boxShadow: "0 3px 8px rgba(15, 23, 42, 0.18)",
-
               "&:hover": {
                 backgroundColor: "#ffffff",
                 borderColor: "rgba(255, 255, 255, 1)",

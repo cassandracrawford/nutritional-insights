@@ -42,7 +42,7 @@ export default function Metadata({ metadata }) {
         className="
           w-full max-w-7xl
           rounded-3xl border border-white/25 bg-white/10
-          backdrop-blur-2xl
+          backdrop-blur-3xl
           shadow-xl shadow-slate-900/40
           px-5 py-4 sm:px-8 sm:py-6
         "

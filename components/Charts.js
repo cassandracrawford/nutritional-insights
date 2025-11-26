@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { PieChart } from "@mui/x-charts/PieChart";
 import { useMemo } from "react";
+import HeatmapEcharts from "./Heatmap";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), {
   ssr: false,
@@ -26,7 +27,24 @@ export default function Charts({ charts, selectedDiet }) {
   // ------------------------
   // HEATMAP – safe guard so option is never undefined
   // ------------------------
-  const heatmapOption = charts?.heatmapOption || null;
+  const heatmapData = useMemo(() => {
+    const labels = charts?.bar?.labels || [];
+    const proteinSeries = charts?.bar?.series?.[0]?.data || [];
+    const carbsSeries = charts?.bar?.series?.[1]?.data || [];
+    const fatSeries = charts?.bar?.series?.[2]?.data || [];
+
+    if (!labels.length || !proteinSeries.length) return null;
+
+    const xCats = ["Protein (g)", "Carbs (g)", "Fat (g)"];
+    const yCats = labels;
+    const matrix = labels.map((_, idx) => [
+      Number(proteinSeries[idx] ?? 0),
+      Number(carbsSeries[idx] ?? 0),
+      Number(fatSeries[idx] ?? 0),
+    ]);
+
+    return { xCats, yCats, matrix };
+  }, [charts?.bar?.labels, charts?.bar?.series]);
 
   // ------------------------
   // SCATTERMAP MOCK DATA
@@ -78,13 +96,13 @@ export default function Charts({ charts, selectedDiet }) {
       type: "category",
       data: scatterMock.x,
       axisLine: { lineStyle: { color: "rgba(15,23,42,0.2)" } },
-      axisLabel: { color: "rgba(15,23,42,0.8)", fontSize: 12 },
+      axisLabel: { color: "#000000", fontSize: 12 },
     },
     yAxis: {
       type: "category",
       data: scatterMock.y,
       axisLine: { lineStyle: { color: "rgba(15,23,42,0.2)" } },
-      axisLabel: { color: "rgba(15,23,42,0.8)", fontSize: 12 },
+      axisLabel: { color: "#000000", fontSize: 12 },
     },
     series: [
       {
@@ -94,7 +112,7 @@ export default function Charts({ charts, selectedDiet }) {
           return 10 + (val[2] / maxScatter) * 25;
         },
         itemStyle: {
-          color: "#fb7185", // rose, no green
+          color: "#ec4899",
         },
       },
     ],
@@ -104,7 +122,7 @@ export default function Charts({ charts, selectedDiet }) {
     <div className="px-4 py-4">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* -------- BAR CHART -------- */}
-        <div className="glass-card p-6 rounded-3xl backdrop-blur-xl border border-white/20">
+        <div className="glass-card p-6 rounded-3xl backdrop-blur-3xl border border-white/20">
           <h2 className="text-lg font-semibold text-white mb-4 drop-shadow">
             Average Macros by Diet (Bar)
           </h2>
@@ -114,23 +132,47 @@ export default function Charts({ charts, selectedDiet }) {
               {
                 data: charts?.bar?.labels || [],
                 scaleType: "band",
+                tickLabelStyle: { fill: "#111827" }, // dark text
               },
             ]}
+            yAxis={[
+              {
+                tickLabelStyle: { fill: "#111827" },
+              },
+            ]}
+            grid={{
+              vertical: false,
+              horizontal: false,
+            }}
+            sx={{
+              "& .MuiChartsAxis-line": {
+                stroke: "rgba(15,23,42,0.2)",
+              },
+              "& .MuiChartsAxis-tick": {
+                stroke: "rgba(15,23,42,0.2)",
+              },
+              "& .MuiChartsAxis-tickLabel": {
+                fill: "rgba(15,23,42,0.8)", // dark text
+              },
+              "& .MuiChartsLegend-label": {
+                fill: "rgba(15,23,42,0.8)",
+              },
+            }}
             series={[
               {
                 label: "Protein",
                 data: charts?.bar?.series?.[0]?.data || [],
-                color: "#fb7185", // rose
+                color: "#ec4899",
               },
               {
                 label: "Carbs",
                 data: charts?.bar?.series?.[1]?.data || [],
-                color: "#f97316", // orange
+                color: "#f59e0b",
               },
               {
                 label: "Fat",
                 data: charts?.bar?.series?.[2]?.data || [],
-                color: "#c4b5fd", // violet
+                color: "#818cf8",
               },
             ]}
           />
@@ -141,8 +183,12 @@ export default function Charts({ charts, selectedDiet }) {
           <h2 className="text-lg font-semibold text-white mb-4 drop-shadow">
             Average Macros Heatmap
           </h2>
-          {heatmapOption ? (
-            <ReactECharts option={heatmapOption} style={{ height: 350 }} />
+          {heatmapData ? (
+            <HeatmapEcharts
+              xCats={heatmapData.xCats}
+              yCats={heatmapData.yCats}
+              matrix={heatmapData.matrix}
+            />
           ) : (
             <div className="flex h-[350px] items-center justify-center text-sm text-white/70">
               No heatmap data available.
@@ -158,15 +204,25 @@ export default function Charts({ charts, selectedDiet }) {
 
           <PieChart
             height={350}
+            sx={{
+              // legend text
+              "& .MuiChartsLegend-label": {
+                fill: "#111827",
+              },
+              // slice labels (if you ever show them)
+              "& .MuiChartsPie-label": {
+                fill: "#111827",
+              },
+            }}
             series={[
               {
                 data: pieData.map((d, i) => ({
                   ...d,
                   color: [
-                    "#fb7185", // rose
-                    "#f97316", // orange
-                    "#fbbf24", // amber
-                    "#c4b5fd", // violet
+                    "#ec4899", // protein
+                    "#f59e0b", // carbs
+                    "#818cf8", // fat
+                    "#f472b6",
                   ][i % 4],
                 })),
               },
