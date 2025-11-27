@@ -1,7 +1,6 @@
-// components/RecipeBrowser.jsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Table,
@@ -21,23 +20,6 @@ import {
   Divider,
 } from "@mui/material";
 
-/**
- * Props:
- * - recipes: array of:
- *    {
- *      id: string | number,
- *      recipe_name: string,
- *      diet_type: string,
- *      cuisine_type?: string,
- *      protein_g?: number,
- *      carbs_g?: number,
- *      fat_g?: number,
- *    }
- * - page: current page (1-based)
- * - pageSize: number of rows per page
- * - total: total number of recipes (for pagination)
- * - onPageChange(newPage: number)
- */
 export default function RecipeBrowser({
   recipes = [],
   page = 1,
@@ -47,13 +29,9 @@ export default function RecipeBrowser({
 }) {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
 
-  const totalPages = Math.max(1, Math.ceil((total || recipes.length) / pageSize));
-  const effectiveTotal = total || recipes.length;
-
-  const pageRecipes = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return recipes.slice(start, start + pageSize);
-  }, [recipes, page, pageSize]);
+  const effectiveTotal = total;
+  const totalPages = Math.max(1, Math.ceil(effectiveTotal / pageSize));
+  const pageRecipes = recipes;
 
   const startIndex = effectiveTotal === 0 ? 0 : (page - 1) * pageSize + 1;
   const endIndex = Math.min(page * pageSize, effectiveTotal);
@@ -65,11 +43,17 @@ export default function RecipeBrowser({
 
   const handleCloseModal = () => setSelectedRecipe(null);
 
-  // helper to compute calories if you want to show it
+  const getMacroValue = (r, baseKey) => {
+    const direct = r?.[baseKey];
+    const suffixed = r?.[`${baseKey}_g`];
+    const val = direct ?? suffixed;
+    return val === undefined || val === null ? null : Number(val);
+  };
+
   const getCalories = (r) => {
-    const p = Number(r.protein_g ?? 0);
-    const c = Number(r.carbs_g ?? 0);
-    const f = Number(r.fat_g ?? 0);
+    const p = getMacroValue(r, "protein") || 0;
+    const c = getMacroValue(r, "carbs") || 0;
+    const f = getMacroValue(r, "fat") || 0;
     return Math.round(p * 4 + c * 4 + f * 9);
   };
 
@@ -132,8 +116,12 @@ export default function RecipeBrowser({
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ ...thSx, textAlign: "center" }}>Recipe</TableCell>
-                  <TableCell sx={{ ...thSx, textAlign: "center" }}>Cuisine</TableCell>
+                  <TableCell sx={{ ...thSx, textAlign: "center", width: "65%" }}>
+                    Recipe
+                  </TableCell>
+                  <TableCell sx={{ ...thSx, textAlign: "center", width: "35%" }}>
+                    Cuisine
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -168,8 +156,8 @@ export default function RecipeBrowser({
                         "&:last-child td, &:last-child th": { border: 0 },
                       }}
                     >
-                      <TableCell sx={tdMainSx}>{r.recipe_name}</TableCell>
-                      <TableCell sx={tdSx}>
+                      <TableCell sx={{ ...tdMainSx, width: "65%"}}>{r.recipe_name}</TableCell>
+                      <TableCell sx={{ ...tdSx, textAlign: "center", width: "35%" }}>
                         {r.cuisine_type || "—"}
                       </TableCell>
                     </TableRow>
@@ -215,10 +203,12 @@ export default function RecipeBrowser({
         maxWidth="sm"
         PaperProps={{
           sx: {
-            borderRadius: "24px",
+            borderRadius: "28px",
+            border: "1px solid rgba(255,255,255,0.65)",
             background:
-              "radial-gradient(circle at top left, rgba(248,250,252,0.98), rgba(241,245,249,0.96))",
-            boxShadow: "0 22px 60px rgba(15,23,42,0.45)",
+              "linear-gradient(135deg, rgba(255,255,255,0.18), rgba(244,114,182,0.22))",
+            backdropFilter: "blur(26px)",
+            boxShadow: "0 24px 70px rgba(15,23,42,0.65)",
           },
         }}
       >
@@ -227,67 +217,103 @@ export default function RecipeBrowser({
             <DialogTitle
               sx={{
                 fontWeight: 600,
-                fontSize: "1.1rem",
-                color: "#0f172a",
+                fontSize: "1rem",
+                color: "#f9fafb",
+                pb: 1.2,
               }}
             >
               {selectedRecipe.recipe_name}
             </DialogTitle>
-            <Divider />
+            <Divider
+              sx={{
+                borderColor: "rgba(248,250,252,0.25)",
+              }}
+            />
             <DialogContent
               sx={{
                 pt: 2,
-                pb: 1,
+                pb: 1.5,
                 display: "flex",
                 flexDirection: "column",
                 gap: 1.5,
+                color: "#e5e7eb",
               }}
             >
               <Typography
                 variant="body2"
-                sx={{ color: "#4b5563", fontSize: "0.9rem" }}
+                sx={{ fontSize: "0.9rem", color: "#e5e7eb" }}
               >
-                <strong>Diet Type:</strong>{" "}
-                {selectedRecipe.diet_type || "—"}
+                <strong>Diet Type:</strong> {selectedRecipe.diet_type || "—"}
               </Typography>
               <Typography
                 variant="body2"
-                sx={{ color: "#4b5563", fontSize: "0.9rem" }}
+                sx={{ fontSize: "0.9rem", color: "#e5e7eb" }}
               >
-                <strong>Cuisine:</strong>{" "}
-                {selectedRecipe.cuisine_type || "—"}
+                <strong>Cuisine:</strong> {selectedRecipe.cuisine_type || "—"}
               </Typography>
 
               <Box sx={{ mt: 1 }}>
                 <Typography
                   sx={{
-                    fontSize: "0.75rem",
+                    fontSize: "0.7rem",
                     textTransform: "uppercase",
                     letterSpacing: "0.16em",
-                    color: "#6b7280",
-                    mb: 0.5,
+                    color: "rgba(226,232,240,0.9)",
+                    mb: 0.8,
                   }}
                 >
                   Macros (per serving)
                 </Typography>
-                <Stack direction="row" spacing={3}>
-                  <MacroPill label="Protein" value={selectedRecipe.protein_g} unit="g" color="#ec4899" />
-                  <MacroPill label="Carbs" value={selectedRecipe.carbs_g} unit="g" color="#f59e0b" />
-                  <MacroPill label="Fat" value={selectedRecipe.fat_g} unit="g" color="#818cf8" />
-                  <MacroPill label="Estimated kcal" value={getCalories(selectedRecipe)} unit="kcal" color="#0ea5e9" />
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  sx={{ flexWrap: "wrap", rowGap: 1.5 }}
+                >
+                  <MacroPill
+                    label="Protein"
+                    value={getMacroValue(selectedRecipe, "protein")}
+                    unit="g"
+                    color="#ec4899"
+                  />
+                  <MacroPill
+                    label="Carbs"
+                    value={getMacroValue(selectedRecipe, "carbs")}
+                    unit="g"
+                    color="#f59e0b"
+                  />
+                  <MacroPill
+                    label="Fat"
+                    value={getMacroValue(selectedRecipe, "fat")}
+                    unit="g"
+                    color="#818cf8"
+                  />
+                  <MacroPill
+                    label="Estimated kcal"
+                    value={getCalories(selectedRecipe)}
+                    unit="kcal"
+                    color="#38bdf8"
+                  />
                 </Stack>
               </Box>
             </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
+            <DialogActions sx={{ px: 3, pb: 2.4 }}>
               <Button
                 onClick={handleCloseModal}
                 variant="contained"
                 sx={{
                   textTransform: "none",
                   borderRadius: "999px",
-                  px: 3,
-                  backgroundColor: "#0f172a",
-                  "&:hover": { backgroundColor: "#020617" },
+                  px: 4,
+                  py: 1,
+                  fontWeight: 600,
+                  fontSize: "0.9rem",
+                  backgroundColor: "#ffffff",
+                  color: "#0f172a",
+                  border: "1px solid rgba(255,255,255,0.4)",
+                  boxShadow: "0 4px 12px rgba(255,255,255,0.15)",
+                  "&:hover": {
+                    backgroundColor: "#f1f5f9",
+                  },
                 }}
               >
                 Close
@@ -332,10 +358,12 @@ function MacroPill({ label, value, unit, color }) {
     <Box
       sx={{
         borderRadius: "999px",
-        px: 1.8,
-        py: 0.6,
+        px: 2,
+        py: 0.7,
         border: `1px solid ${color}`,
-        backgroundColor: "rgba(248,250,252,0.9)",
+        background:
+          "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(15,23,42,0.6))",
+        boxShadow: "0 6px 14px rgba(15,23,42,0.7)",
       }}
     >
       <Typography
@@ -343,7 +371,7 @@ function MacroPill({ label, value, unit, color }) {
           fontSize: "0.65rem",
           textTransform: "uppercase",
           letterSpacing: "0.14em",
-          color: "#6b7280",
+          color: "rgba(226,232,240,0.85)",
         }}
       >
         {label}
@@ -352,11 +380,11 @@ function MacroPill({ label, value, unit, color }) {
         sx={{
           fontSize: "0.9rem",
           fontWeight: 600,
-          color: "#111827",
+          color: "#f9fafb",
         }}
       >
         {display}{" "}
-        <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>{unit}</span>
+        <span style={{ fontSize: "0.75rem", color: "#e5e7eb" }}>{unit}</span>
       </Typography>
     </Box>
   );

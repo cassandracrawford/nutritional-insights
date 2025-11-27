@@ -45,7 +45,7 @@ const selectSx = {
   "& .MuiInputLabel-root.Mui-focused": { color: labelColor },
   "& .MuiSelect-icon": { color: labelColor },
 
-  // 🔥 Disabled styling here
+  // Disabled styling
   "& .Mui-disabled": {
     color: "rgba(255,255,255,0.45) !important",
     WebkitTextFillColor: "rgba(255,255,255,0.45) !important",
@@ -127,21 +127,6 @@ const textFieldSx = {
   },
 };
 
-/**
- * Props:
- * - diets: string[]
- * - cuisines: string[]
- * - macroOptions: string[]   // e.g. ["High Protein", "Low Carb", ...]
- * - initial: {
- *     search?: string,
- *     diet?: string,
- *     cuisine?: string,
- *     macro?: string,
- *     pageSize?: number
- *   }
- * - onApply({ search, diet, cuisine, macro, pageSize })
- * - disabled?: boolean
- */
 export default function Filter({
   diets = [],
   cuisines = [],
@@ -156,14 +141,27 @@ export default function Filter({
   const [macro, setMacro] = useState(initial.macro || "");
   const [pageSize, setPageSize] = useState(initial.pageSize || 10);
 
-  // Debounced apply whenever any filter changes
   useEffect(() => {
-    const t = setTimeout(() => {
-      onApply?.({ search, diet, cuisine, macro, pageSize });
-    }, 400);
+    setSearch(initial.search || "");
+    setDiet(initial.diet || "");
+    setCuisine(initial.cuisine || "");
+    setMacro(initial.macro || "");
+    setPageSize(initial.pageSize || 10);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    return () => clearTimeout(t);
-  }, [search, diet, cuisine, macro, pageSize, onApply]);
+  // Small helper to send the full current filter set
+  const apply = (overrides = {}) => {
+    const payload = {
+      search,
+      diet,
+      cuisine,
+      macro,
+      pageSize,
+      ...overrides,
+    };
+    onApply?.(payload);
+  };
 
   const handleReset = () => {
     setSearch("");
@@ -172,8 +170,7 @@ export default function Filter({
     setMacro("");
     setPageSize(10);
 
-    // Call immediately so list snaps back to default
-    onApply?.({
+    apply({
       search: "",
       diet: "",
       cuisine: "",
@@ -204,24 +201,27 @@ export default function Filter({
             label="Keyword Search"
             placeholder="Search recipes, ingredients, keywords…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSearch(v);
+              apply({ search: v });
+            }}
             sx={textFieldSx}
-            disabled={disabled}
           />
 
           {/* Diet type select */}
-          <FormControl
-            size="small"
-            sx={selectSx}
-            disabled={disabled || !diets.length}
-          >
+          <FormControl size="small" sx={selectSx} disabled={!diets.length}>
             <InputLabel id="diet-type-label">Diet Type</InputLabel>
             <Select
               labelId="diet-type-label"
               id="diet-type-select"
               value={diet}
               label="Diet Type"
-              onChange={(e) => setDiet(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setDiet(v);
+                apply({ diet: v });
+              }}
               MenuProps={menuProps}
             >
               <MenuItem value="">
@@ -236,18 +236,18 @@ export default function Filter({
           </FormControl>
 
           {/* Cuisine select */}
-          <FormControl
-            size="small"
-            sx={selectSx}
-            disabled={disabled || !cuisines.length}
-          >
+          <FormControl size="small" sx={selectSx} disabled={!cuisines.length}>
             <InputLabel id="cuisine-label">Cuisine</InputLabel>
             <Select
               labelId="cuisine-label"
               id="cuisine-select"
               value={cuisine}
               label="Cuisine"
-              onChange={(e) => setCuisine(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setCuisine(v);
+                apply({ cuisine: v });
+              }}
               MenuProps={menuProps}
             >
               <MenuItem value="">
@@ -265,15 +265,19 @@ export default function Filter({
           <FormControl
             size="small"
             sx={selectSx}
-            disabled={disabled || !macroOptions.length}
+            disabled={!macroOptions.length}
           >
             <InputLabel id="macro-label">Macronutrient</InputLabel>
             <Select
               labelId="macro-label"
               id="macro-select"
               value={macro}
-              label="Macro Focus"
-              onChange={(e) => setMacro(e.target.value)}
+              label="Macronutrient"
+              onChange={(e) => {
+                const v = e.target.value;
+                setMacro(v);
+                apply({ macro: v });
+              }}
               MenuProps={menuProps}
             >
               <MenuItem value="">
@@ -287,13 +291,10 @@ export default function Filter({
             </Select>
           </FormControl>
 
-          {/* Per-page selector (for pagination) */}
+          {/* Per-page selector */}
           <FormControl
             size="small"
-            sx={{
-              ...selectSx,
-              minWidth: 110,
-            }}
+            sx={{ ...selectSx, minWidth: 110 }}
             disabled={disabled}
           >
             <InputLabel id="per-page-label">Per page</InputLabel>
@@ -302,7 +303,11 @@ export default function Filter({
               id="per-page-select"
               value={pageSize}
               label="Per page"
-              onChange={(e) => setPageSize(Number(e.target.value))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                setPageSize(n);
+                apply({ pageSize: n });
+              }}
               MenuProps={menuProps}
             >
               {[5, 10, 20, 50].map((n) => (

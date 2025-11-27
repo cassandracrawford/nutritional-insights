@@ -54,12 +54,11 @@ export default function HeatmapEcharts({ xCats, yCats, matrix }) {
     xAxis: {
       type: "category",
       data: xCats,
-      // no splitArea here -> no extra stripes, only side axis
       axisLabel: {
-        color: "#000000", // dark labels, like scattermap
+        color: "#000000", 
         fontSize: 12,
       },
-      axisLine: { lineStyle: { color: AXIS_GRAY } }, // same gray as scatter
+      axisLine: { lineStyle: { color: AXIS_GRAY } }, 
     },
     yAxis: {
       type: "category",
@@ -82,7 +81,6 @@ export default function HeatmapEcharts({ xCats, yCats, matrix }) {
         fontSize: 11,
       },
       inRange: {
-        // keep your pink → rose → indigo ramp
         color: ["#ffe4e6", "#ec4899", "#818cf8"],
       },
     },
@@ -96,7 +94,7 @@ export default function HeatmapEcharts({ xCats, yCats, matrix }) {
             params.value && params.value[2] != null
               ? params.value[2].toFixed(1)
               : "",
-          color: "#111827", // black numbers on tiles
+          color: "#111827", 
           fontWeight: 500,
           fontSize: 10,
         },

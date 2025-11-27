@@ -78,7 +78,7 @@ export default function Metadata({ metadata }) {
               <span className="text-[10px] sm:text-xs uppercase tracking-[0.16em] text-slate-100/80">
                 {item.label}
               </span>
-              <span className="text-lg sm:text-xl font-semibold text-white">
+              <span className="text-lg sm:text-2xl font-semibold text-white">
                 {item.value}
               </span>
               {item.helper && (

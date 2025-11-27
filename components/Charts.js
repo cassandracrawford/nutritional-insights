@@ -12,7 +12,7 @@ const ReactECharts = dynamic(() => import("echarts-for-react"), {
 
 export default function Charts({ charts, selectedDiet }) {
   // ------------------------
-  // PIE CHART – selected diet
+  // PIE CHART 
   // ------------------------
   const diets = charts?.bar?.labels || [];
 
@@ -25,7 +25,7 @@ export default function Charts({ charts, selectedDiet }) {
   const pieData = charts?.pieForDiet?.(pieIndex) || [];
 
   // ------------------------
-  // HEATMAP – safe guard so option is never undefined
+  // HEATMAP 
   // ------------------------
   const heatmapData = useMemo(() => {
     const labels = charts?.bar?.labels || [];
@@ -47,76 +47,87 @@ export default function Charts({ charts, selectedDiet }) {
   }, [charts?.bar?.labels, charts?.bar?.series]);
 
   // ------------------------
-  // SCATTERMAP MOCK DATA
+  // SCATTERMAP 
   // ------------------------
-  const scatterMock = {
-    x: ["Protein", "Carbs", "Fat", "Fiber"],
-    y: ["Keto", "Dash", "Vegan", "Paleo"],
-    values: [
-      [40, 50, 30, 20],
-      [60, 80, 20, 35],
-      [30, 90, 25, 40],
-      [70, 40, 15, 10],
-    ],
-  };
+  const scatterData = charts?.scatterTop5 || [];
 
-  const scatterPoints = [];
-  for (let yi = 0; yi < scatterMock.y.length; yi++) {
-    for (let xi = 0; xi < scatterMock.x.length; xi++) {
-      scatterPoints.push([xi, yi, scatterMock.values[yi][xi]]);
+  const scatter = useMemo(() => {
+    if (!scatterData.length) return null;
+
+    const x = ["Protein", "Carbs", "Fat"];
+    const y = scatterData.map((d) => {
+      const raw = d.diet_type || "";
+      return raw.charAt(0).toUpperCase() + raw.slice(1);
+    });
+
+    const values = scatterData.map((d) => [
+      Number(d.avg_protein ?? d.protein ?? 0),
+      Number(d.avg_carbs ?? d.carbs ?? 0),
+      Number(d.avg_fat ?? d.fat ?? 0),
+    ]);
+
+    const points = [];
+    for (let yi = 0; yi < y.length; yi++) {
+      for (let xi = 0; xi < x.length; xi++) {
+        points.push([xi, yi, values[yi][xi]]);
+      }
     }
-  }
 
-  const maxScatter = scatterPoints.length
-    ? Math.max.apply(
-        null,
-        scatterPoints.map((p) => p[2])
-      )
-    : 1;
+    const maxVal = points.length ? Math.max(...points.map((p) => p[2])) : 1;
 
-  const scatterOption = {
-    tooltip: {
-      formatter: function (params) {
-        const value = params.value || [];
-        const xIndex = value[0];
-        const yIndex = value[1];
-        const val = value[2];
-        return (
-          "<strong>" +
-          scatterMock.y[yIndex] +
-          "</strong><br/>" +
-          scatterMock.x[xIndex] +
-          ": " +
-          val
-        );
-      },
-    },
-    grid: { left: 40, right: 20, top: 30, bottom: 40, containLabel: true },
-    xAxis: {
-      type: "category",
-      data: scatterMock.x,
-      axisLine: { lineStyle: { color: "rgba(15,23,42,0.2)" } },
-      axisLabel: { color: "#000000", fontSize: 12 },
-    },
-    yAxis: {
-      type: "category",
-      data: scatterMock.y,
-      axisLine: { lineStyle: { color: "rgba(15,23,42,0.2)" } },
-      axisLabel: { color: "#000000", fontSize: 12 },
-    },
-    series: [
-      {
-        type: "scatter",
-        data: scatterPoints,
-        symbolSize: function (val) {
-          return 10 + (val[2] / maxScatter) * 25;
+    return { x, y, points, maxVal };
+  }, [scatterData]);
+
+  const scatterOption = scatter
+    ? {
+        tooltip: {
+          formatter: function (params) {
+            const value = params.value || [];
+            const xIndex = value[0];
+            const yIndex = value[1];
+            const val = value[2];
+            return (
+              "<strong>" +
+              scatter.y[yIndex] +
+              "</strong><br/>" +
+              scatter.x[xIndex] +
+              ": " +
+              val.toFixed(1)
+            );
+          },
         },
-        itemStyle: {
-          color: "#ec4899",
+        grid: { left: 40, right: 20, top: 30, bottom: 40, containLabel: true },
+        xAxis: {
+          type: "category",
+          data: scatter.x,
+          axisLine: { lineStyle: { color: "rgba(15,23,42,0.2)" } },
+          axisLabel: { color: "#000000", fontSize: 12 },
         },
-      },
-    ],
-  };
+        yAxis: {
+          type: "category",
+          data: scatter.y,
+          axisLine: { lineStyle: { color: "rgba(15,23,42,0.2)" } },
+          axisLabel: { color: "#000000", fontSize: 12 },
+        },
+        series: [
+          {
+            type: "scatter",
+            data: scatter.points,
+            symbolSize: function (val) {
+              return 10 + (val[2] / (scatter.maxVal || 1)) * 25;
+            },
+            itemStyle: {
+              color: "#ec4899",
+            },
+          },
+        ],
+      }
+    : {
+        // safe empty option so chart doesn't crash when no data
+        xAxis: { type: "category", data: [] },
+        yAxis: { type: "category", data: [] },
+        series: [],
+      };
 
   return (
     <div className="px-4 py-4">
@@ -124,7 +135,7 @@ export default function Charts({ charts, selectedDiet }) {
         {/* -------- BAR CHART -------- */}
         <div className="glass-card p-6 rounded-3xl backdrop-blur-3xl border border-white/20">
           <h2 className="text-lg font-semibold text-white mb-4 drop-shadow">
-            Average Macros by Diet (Bar)
+            Bar – Average Macros by Diet
           </h2>
           <BarChart
             height={350}
@@ -181,7 +192,7 @@ export default function Charts({ charts, selectedDiet }) {
         {/* -------- HEATMAP -------- */}
         <div className="glass-card p-6 rounded-3xl backdrop-blur-xl border border-white/20">
           <h2 className="text-lg font-semibold text-white mb-4 drop-shadow">
-            Average Macros Heatmap
+            Heatmap – Average Macros
           </h2>
           {heatmapData ? (
             <HeatmapEcharts
@@ -199,7 +210,7 @@ export default function Charts({ charts, selectedDiet }) {
         {/* -------- PIE CHART -------- */}
         <div className="glass-card p-6 rounded-3xl backdrop-blur-xl border border-white/20">
           <h2 className="text-lg font-semibold text-white mb-4 drop-shadow">
-            Macronutrient Distribution — {diets[pieIndex] || "Diet"}
+            Pie – Macronutrient Distribution — {diets[pieIndex] || "Diet"}
           </h2>
 
           <PieChart
@@ -233,9 +244,15 @@ export default function Charts({ charts, selectedDiet }) {
         {/* -------- SCATTERMAP (MOCK) -------- */}
         <div className="glass-card p-6 rounded-3xl backdrop-blur-xl border border-white/20">
           <h2 className="text-lg font-semibold text-white mb-4 drop-shadow">
-            Scattermap (Mock Data)
+            Scattermap – Top Diets by Macros
           </h2>
-          <ReactECharts option={scatterOption} style={{ height: 350 }} />
+          {scatterOption ? (
+            <ReactECharts option={scatterOption} style={{ height: 350 }} />
+          ) : (
+            <div className="flex h-[350px] items-center justify-center text-sm text-white/70">
+              No scatter data available.
+            </div>
+          )}
         </div>
       </div>
 

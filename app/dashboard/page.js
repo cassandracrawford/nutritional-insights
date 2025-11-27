@@ -1,49 +1,110 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { useState, useEffect, useCallback } from "react";
 import Dashboard from "@/components/Dashboard";
-import { fetchDietData, buildCharts } from "@/src/api";
+import {
+  fetchDietInsights,
+  mapDietInsightsToCharts,
+  fetchRecipes,
+} from "@/src/api";
+
+const DEFAULT_FILTERS = {
+  search: "",
+  diet: "",
+  cuisine: "",
+  macro: "",
+  pageSize: 10,
+};
 
 export default function Home() {
-  const [raw, setRaw] = useState(null);              // raw API payload
-  const [filters, setFilters] = useState({ diet: "", search: "" });
+  // current selected filters
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+
+  // charts + metadata
+  const [charts, setCharts] = useState(null);
+  const [meta, setMeta] = useState(null);
   const [selectedDiet, setSelectedDiet] = useState("");
+
+  // recipe list + pagination
+  const [recipes, setRecipes] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalRecipes, setTotalRecipes] = useState(0);
+
+  // loading / error
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch once (and on Refresh)
-  const load = useCallback(async () => {
-    try {
+  // dropdown options coming from /api/diet-insights
+  const [filterOptions, setFilterOptions] = useState({
+    diets: [],
+    cuisines: [],
+    macroOptions: [],
+  });
+
+  const load = useCallback(
+    async (nextFilters = filters, nextPage = page) => {
       setLoading(true);
       setError("");
-      const payload = await fetchDietData();
-      setRaw(payload);
-    } catch (e) {
-      setError(String(e));
-      setRaw(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  useEffect(() => { load(); }, [load]);  // initial fetch
+      try {
+        const pageSize = nextFilters.pageSize || 10;
 
-  // Derive charts + meta from raw + filters (no extra state, no double compute)
-  const { charts, meta } = useMemo(
-    () => (raw ? buildCharts(raw, filters) : { charts: null, meta: null }),
-    [raw, filters]
+        const [dietJson, recipesRes] = await Promise.all([
+          fetchDietInsights(nextFilters),
+          fetchRecipes(nextFilters, nextPage, pageSize),
+        ]);
+
+        // map diet-insights response
+        const { charts, meta, filters: options } =
+          mapDietInsightsToCharts(dietJson);
+
+        setCharts(charts);
+        setMeta(meta);
+        setFilterOptions(options); // diets/cuisines/macroOptions
+
+        // set default selected diet if none yet
+        if (!selectedDiet && charts.diets?.length) {
+          setSelectedDiet(charts.diets[0]);
+        }
+
+        // recipes + pagination
+        setRecipes(recipesRes.recipes || []);
+        setPage(recipesRes.page ?? nextPage);
+        setTotalRecipes(
+          recipesRes.total ?? (recipesRes.recipes?.length || 0)
+        );
+      } catch (e) {
+        console.error(e);
+        setError(String(e));
+        setCharts(null);
+        setRecipes([]);
+        setTotalRecipes(0);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filters, page, selectedDiet]
   );
 
-  // If no selection yet, choose the first available diet
+  // Initial load
   useEffect(() => {
-    if (!selectedDiet && charts?.diets?.length) {
-      setSelectedDiet(charts.diets[0]);
-    }
-  }, [charts?.diets, selectedDiet]);
+    load(DEFAULT_FILTERS, 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleApply = (next) => setFilters(next);
+  /** When user changes filters from <Filter /> */
+  const handleApply = (next) => {
+    const merged = { ...filters, ...next };
+    setFilters(merged);
+    setPage(1); // reset pagination
+    load(merged, 1);
+  };
+
+  // For pagination changes
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    load(filters, newPage);
+  };
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -55,9 +116,14 @@ export default function Home() {
           loading={loading}
           error={error}
           selectedDiet={selectedDiet}
-          onDietChange={setSelectedDiet}
           onApply={handleApply}
-          filters={filters}
+          filters={filterOptions}           
+          recipes={recipes}
+          page={page}
+          pageSize={filters.pageSize}
+          totalRecipes={totalRecipes}        
+          onPageChange={handlePageChange}
+          activeFilters={filters}
         />
       </section>
       {/* <Footer /> */}
