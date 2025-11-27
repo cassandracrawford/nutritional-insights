@@ -18,7 +18,9 @@ import {
   DialogActions,
   Button,
   Divider,
+  IconButton,    
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 
 export default function RecipeBrowser({
   recipes = [],
@@ -220,19 +222,39 @@ export default function RecipeBrowser({
                 fontSize: "1rem",
                 color: "#f9fafb",
                 pb: 1.2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                pr: 1, 
               }}
             >
               {selectedRecipe.recipe_name}
+              <IconButton
+                aria-label="close"
+                onClick={handleCloseModal}
+                sx={{
+                  ml: 2,
+                  color: "#e5e7eb",
+                  "&:hover": {
+                    color: "#ffffff",
+                    backgroundColor: "rgba(15,23,42,0.35)",
+                  },
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
             </DialogTitle>
+
             <Divider
               sx={{
                 borderColor: "rgba(248,250,252,0.25)",
               }}
             />
+
             <DialogContent
               sx={{
                 pt: 2,
-                pb: 1.5,
+                pb: 2.5,
                 display: "flex",
                 flexDirection: "column",
                 gap: 1.5,
@@ -252,14 +274,14 @@ export default function RecipeBrowser({
                 <strong>Cuisine:</strong> {selectedRecipe.cuisine_type || "—"}
               </Typography>
 
-              <Box sx={{ mt: 1 }}>
+              <Box sx={{ mt: 1, mb: 1.5 }}>
                 <Typography
                   sx={{
                     fontSize: "0.7rem",
                     textTransform: "uppercase",
                     letterSpacing: "0.16em",
                     color: "rgba(226,232,240,0.9)",
-                    mb: 0.8,
+                    mb: 1.5,
                   }}
                 >
                   Macros (per serving)
@@ -296,29 +318,6 @@ export default function RecipeBrowser({
                 </Stack>
               </Box>
             </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2.4 }}>
-              <Button
-                onClick={handleCloseModal}
-                variant="contained"
-                sx={{
-                  textTransform: "none",
-                  borderRadius: "999px",
-                  px: 4,
-                  py: 1,
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  backgroundColor: "#ffffff",
-                  color: "#0f172a",
-                  border: "1px solid rgba(255,255,255,0.4)",
-                  boxShadow: "0 4px 12px rgba(255,255,255,0.15)",
-                  "&:hover": {
-                    backgroundColor: "#f1f5f9",
-                  },
-                }}
-              >
-                Close
-              </Button>
-            </DialogActions>
           </>
         )}
       </Dialog>
